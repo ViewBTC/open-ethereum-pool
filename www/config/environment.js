@@ -15,19 +15,19 @@ module.exports = function(environment) {
 
     APP: {
       // API host and port
-      ApiUrl: '//127.0.0.1/',
+      ApiUrl: '//etphunter.com/',
 
       // HTTP mining endpoint
-      HttpHost: 'http://127.0.0.1',
-      HttpPort: 8888,
+      HttpHost: 'http://etphunter.com',
+      HttpPort: 8008,
 
       // Stratum mining endpoint
-      StratumHost: '127.0.0.1',
+      StratumHost: 'etphunter.com',
       StratumPort: 8008,
 
       // Fee and payout details
-      PoolFee: '1%',
-      PayoutThreshold: '0.5 Ether',
+      PoolFee: '0.5%',
+      PayoutThreshold: '1 ETP',
 
       // For network hashrate (change for your favourite fork)
       BlockTime: 14.4

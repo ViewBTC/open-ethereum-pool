@@ -7,7 +7,7 @@
 
 	"proxy": {
 		"enabled": true,
-		"listen": "10.10.10.37:8888",
+		"listen": "172.31.45.254:8888",
 		"limitHeadersSize": 1024,
 		"limitBodySize": 256,
 		"behindReverseProxy": false,
@@ -21,7 +21,7 @@
 
 		"stratum": {
 			"enabled": true,
-			"listen": "10.10.10.37:8008",
+			"listen": "172.31.45.254:8008",
 			"timeout": "120s",
 			"maxConn": 8192
 		},
@@ -97,8 +97,8 @@
 
 	"payouts": {
 		"enabled": true,
-		"requirePeers": 0,
-		"interval": "1m", 
+		"requirePeers": 8,
+		"interval": "1h", 
 		"daemon": "http://127.0.0.1:8820/rpc/v3",
 		"timeout": "10s",
 		"address": "M8N42NP5NR6tcgXqyzG3oZRqBqPoWRMLGu",
