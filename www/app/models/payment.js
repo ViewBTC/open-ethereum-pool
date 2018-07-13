@@ -2,7 +2,7 @@ import Ember from 'ember';
 
 var Payment = Ember.Object.extend({
 	formatAmount: Ember.computed('amount', function() {
-		var value = parseInt(this.get('amount')) * 0.000000001;
+		var value = parseInt(this.get('amount')) * 0.00000001;
 		return value.toFixed(8);
 	})
 });
