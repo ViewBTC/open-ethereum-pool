@@ -8,6 +8,8 @@ import (
 )
 
 type Config struct {
+	Account               string        `json:"account"`
+	Password              string        `json:"password"`
 	Name                  string        `json:"name"`
 	Proxy                 Proxy         `json:"proxy"`
 	Api                   api.ApiConfig `json:"api"`

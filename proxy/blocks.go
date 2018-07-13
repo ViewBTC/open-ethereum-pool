@@ -4,11 +4,10 @@ import (
 	"log"
 	"math/big"
 	"strconv"
-	"strings"
+	//"strings"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/sammy007/open-ethereum-pool/rpc"
 	"github.com/sammy007/open-ethereum-pool/util"
 )
@@ -49,22 +48,32 @@ func (b Block) NumberU64() uint64        { return b.number }
 func (s *ProxyServer) fetchBlockTemplate() {
 	rpc := s.rpc()
 	t := s.currentBlockTemplate()
+
+	_, err := rpc.SetAddress(s.config.Payouts.Address)
+	if err != nil {
+		log.Printf("Failed to SetAddress[%s] on %s: %s", s.config.Payouts.Address, rpc.Name, err)
+		return
+	}
+
 	pendingReply, height, diff, err := s.fetchPendingBlock()
 	if err != nil {
 		log.Printf("Error while refreshing pending block on %s: %s", rpc.Name, err)
 		return
 	}
+	
 	reply, err := rpc.GetWork()
 	if err != nil {
 		log.Printf("Error while refreshing block template on %s: %s", rpc.Name, err)
 		return
 	}
+
 	// No need to update, we have fresh job
 	if t != nil && t.Header == reply[0] {
 		return
 	}
 
-	pendingReply.Difficulty = util.ToHex(s.config.Proxy.Difficulty)
+	//pendingReply.Difficulty = util.ToHex(s.config.Proxy.Difficulty)
+	pendingReply.Difficulty = util.ToHex(diff)
 
 	newTemplate := BlockTemplate{
 		Header:               reply[0],
@@ -103,12 +112,13 @@ func (s *ProxyServer) fetchPendingBlock() (*rpc.GetBlockReplyPart, uint64, int64
 		log.Printf("Error while refreshing pending block on %s: %s", rpc.Name, err)
 		return nil, 0, 0, err
 	}
-	blockNumber, err := strconv.ParseUint(strings.Replace(reply.Number, "0x", "", -1), 16, 64)
+	blockNumber, err := reply.Number, nil//strconv.ParseUint(reply.Number, 10, 64)
 	if err != nil {
 		log.Println("Can't parse pending block number")
 		return nil, 0, 0, err
 	}
-	blockDiff, err := strconv.ParseInt(strings.Replace(reply.Difficulty, "0x", "", -1), 16, 64)
+	blockDiff, err := strconv.ParseInt(reply.Difficulty, 10, 64)
+	
 	if err != nil {
 		log.Println("Can't parse pending block difficulty")
 		return nil, 0, 0, err

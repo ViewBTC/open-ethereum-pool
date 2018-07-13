@@ -33,11 +33,15 @@ func startApi() {
 }
 
 func startBlockUnlocker() {
+	cfg.BlockUnlocker.Account = cfg.Account
+	cfg.BlockUnlocker.Password = cfg.Password
 	u := payouts.NewBlockUnlocker(&cfg.BlockUnlocker, backend)
 	u.Start()
 }
 
 func startPayoutsProcessor() {
+	cfg.Payouts.Account = cfg.Account
+	cfg.Payouts.Password = cfg.Password
 	u := payouts.NewPayoutsProcessor(&cfg.Payouts, backend)
 	u.Start()
 }

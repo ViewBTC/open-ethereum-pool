@@ -46,7 +46,7 @@ type BlockData struct {
 }
 
 func (b *BlockData) RewardInShannon() int64 {
-	reward := new(big.Int).Div(b.Reward, util.Shannon)
+	reward := new(big.Int).Div(b.Reward, util.Satoshi)
 	return reward.Int64()
 }
 

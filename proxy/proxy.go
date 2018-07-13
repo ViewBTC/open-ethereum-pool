@@ -6,7 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"strings"
+	//"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -57,7 +57,7 @@ func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
 
 	proxy.upstreams = make([]*rpc.RPCClient, len(cfg.Upstream))
 	for i, v := range cfg.Upstream {
-		proxy.upstreams[i] = rpc.NewRPCClient(v.Name, v.Url, v.Timeout)
+		proxy.upstreams[i] = rpc.NewRPCClient(v.Name, v.Url, cfg.Account, cfg.Password, v.Timeout)
 		log.Printf("Upstream: %s => %s", v.Name, v.Url)
 	}
 	log.Printf("Default upstream: %s => %s", proxy.rpc().Name, proxy.rpc().Url)
@@ -128,6 +128,7 @@ func (s *ProxyServer) Start() {
 	r := mux.NewRouter()
 	r.Handle("/{login:0x[0-9a-fA-F]{40}}/{id:[0-9a-zA-Z-_]{1,8}}", s)
 	r.Handle("/{login:0x[0-9a-fA-F]{40}}", s)
+	r.Handle("/{login:[0-9a-zA-Z]{27,34}}", s)
 	srv := &http.Server{
 		Addr:           s.config.Proxy.Listen,
 		Handler:        r,
@@ -216,13 +217,8 @@ func (cs *Session) handleMessage(s *ProxyServer, r *http.Request, req *JSONRpcRe
 	}
 
 	vars := mux.Vars(r)
-	login := strings.ToLower(vars["login"])
+	login := vars["login"]
 
-	if !util.IsValidHexAddress(login) {
-		errReply := &ErrorReply{Code: -1, Message: "Invalid login"}
-		cs.sendError(req.Id, errReply)
-		return
-	}
 	if !s.policy.ApplyLoginPolicy(login, cs.ip) {
 		errReply := &ErrorReply{Code: -1, Message: "You are blacklisted"}
 		cs.sendError(req.Id, errReply)
@@ -241,7 +237,7 @@ func (cs *Session) handleMessage(s *ProxyServer, r *http.Request, req *JSONRpcRe
 	case "eth_submitWork":
 		if req.Params != nil {
 			var params []string
-			err := json.Unmarshal(req.Params, &params)
+			err := json.Unmarshal(*req.Params, &params)
 			if err != nil {
 				log.Printf("Unable to parse params from %v", cs.ip)
 				s.policy.ApplyMalformedPolicy(cs.ip)
@@ -258,6 +254,7 @@ func (cs *Session) handleMessage(s *ProxyServer, r *http.Request, req *JSONRpcRe
 			errReply := &ErrorReply{Code: -1, Message: "Malformed request"}
 			cs.sendError(req.Id, errReply)
 		}
+
 	case "eth_getBlockByNumber":
 		reply := s.handleGetBlockByNumberRPC()
 		cs.sendResult(req.Id, reply)
@@ -269,12 +266,12 @@ func (cs *Session) handleMessage(s *ProxyServer, r *http.Request, req *JSONRpcRe
 	}
 }
 
-func (cs *Session) sendResult(id json.RawMessage, result interface{}) error {
+func (cs *Session) sendResult(id *json.RawMessage, result interface{}) error {
 	message := JSONRpcResp{Id: id, Version: "2.0", Error: nil, Result: result}
 	return cs.enc.Encode(&message)
 }
 
-func (cs *Session) sendError(id json.RawMessage, reply *ErrorReply) error {
+func (cs *Session) sendError(id *json.RawMessage, reply *ErrorReply) error {
 	message := JSONRpcResp{Id: id, Version: "2.0", Error: reply}
 	return cs.enc.Encode(&message)
 }
