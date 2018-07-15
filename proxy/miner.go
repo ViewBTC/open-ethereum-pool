@@ -57,7 +57,7 @@ func (s *ProxyServer) processShare(login, id, ip string, t *BlockTemplate, param
 			return false, false
 		} else {
 			s.fetchBlockTemplate()
-			exist, err := s.backend.WriteBlock(login, id, params, shareDiff, shareDiff, t.Height, s.hashrateExpiration)
+			exist, err := s.backend.WriteBlock(login, id, params, shareDiff, t.Difficulty.Int64(), t.Height, s.hashrateExpiration)
 			if exist {
 				return true, false
 			}
