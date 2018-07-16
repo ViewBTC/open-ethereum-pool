@@ -98,7 +98,7 @@
 	"payouts": {
 		"enabled": true,
 		"requirePeers": 8,
-		"interval": "1h", 
+		"interval": "12h", 
 		"daemon": "http://127.0.0.1:8820/rpc/v3",
 		"timeout": "10s",
 		"address": "M8N42NP5NR6tcgXqyzG3oZRqBqPoWRMLGu",
