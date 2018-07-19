@@ -2,12 +2,12 @@
 	"threads": 2,
 	"coin": "etp",
 	"name": "main",
-	"account": "chengzhpchn",
-	"password": "123456",
+	"account": "chenhao",
+	"password": "HaoChen#2009",
 
 	"proxy": {
 		"enabled": false,
-		"listen": "172.31.45.254:8888",
+		"listen": "47.88.76.112:8888",
 		"limitHeadersSize": 1024,
 		"limitBodySize": 256,
 		"behindReverseProxy": false,

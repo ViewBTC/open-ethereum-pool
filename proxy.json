@@ -2,12 +2,12 @@
 	"threads": 2,
 	"coin": "etp",
 	"name": "main",
-	"account": "chengzhpchn",
-	"password": "123456",
+        "account": "chenhao",
+        "password": "HaoChen#2009",
 
 	"proxy": {
 		"enabled": true,
-		"listen": "172.31.45.254:8888",
+		"listen": "47.88.76.112:8888",
 		"limitHeadersSize": 1024,
 		"limitBodySize": 256,
 		"behindReverseProxy": false,
@@ -21,7 +21,7 @@
 
 		"stratum": {
 			"enabled": true,
-			"listen": "172.31.45.254:8008",
+			"listen": "47.88.76.112:8008",
 			"timeout": "120s",
 			"maxConn": 8192
 		},
@@ -101,7 +101,7 @@
 		"interval": "1h", 
 		"daemon": "http://127.0.0.1:8820/rpc/v3",
 		"timeout": "10s",
-		"address": "M8N42NP5NR6tcgXqyzG3oZRqBqPoWRMLGu",
+		"address": "MGvR5eJteEJaLHW8bfvV4uoPYamdpRqtst",
 		"gas": "21000",
 		"gasPrice": "50000000000",
 		"autoGas": true,

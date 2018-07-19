@@ -2,8 +2,8 @@
 	"threads": 2,
 	"coin": "etp",
 	"name": "main",
-	"account": "chengzhpchn",
-	"password": "123456",
+        "account": "chenhao",
+	"password": "HaoChen#2009",
 
 	"proxy": {
 		"enabled": false,
@@ -87,7 +87,7 @@
 		"poolFee": 0.5,
 		"poolFeeAddress": "",
 		"donate": false,
-		"depth": 100,
+		"depth": 1000,
 		"immatureDepth": 16,
 		"keepTxFees": false,
 		"interval": "10m",
@@ -101,7 +101,7 @@
 		"interval": "12h", 
 		"daemon": "http://127.0.0.1:8820/rpc/v3",
 		"timeout": "10s",
-		"address": "M8N42NP5NR6tcgXqyzG3oZRqBqPoWRMLGu",
+		"address": "MGvR5eJteEJaLHW8bfvV4uoPYamdpRqtst",
 		"gas": "21000",
 		"gasPrice": "50000000000",
 		"autoGas": true,
