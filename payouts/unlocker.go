@@ -147,23 +147,17 @@ func (u *BlockUnlocker) matchCandidate(block *rpc.GetBlockReply, candidate *stor
 		return false
 	}
 
+	// Just compare hash if block is unlocked as immature
+	if len(candidate.Hash) > 0 {
+		if !strings.EqualFold(candidate.Hash, block.Hash) {
+			return false
+		}
+	}
+	
 	nonce1, _ := strconv.ParseInt(block.Nonce, 10, 64)
 	nonce2, _ := strconv.ParseInt(strings.Replace(candidate.Nonce, "0x", "", -1), 16, 64)
 
-	if nonce1 == nonce2 {
-		//if strconv.ParseInt(block.Nonce, 10, 64) == strconv.ParseInt("0x"+candidate.Hash, 10, 64) {
-		return true
-	}
-	// Just compare hash if block is unlocked as immature
-	if len(candidate.Hash) > 0 && strings.EqualFold(candidate.Hash, block.Hash) {
-		return true
-	}
-	// Geth-style candidate matching
-	if len(block.Nonce) > 0 {
-		return strings.EqualFold(block.Nonce, candidate.Nonce)
-	}
-
-	return false
+	return nonce1 == nonce2 
 }
 
 func (u *BlockUnlocker) handleBlock(block *rpc.GetBlockReply, candidate *storage.BlockData) error {
