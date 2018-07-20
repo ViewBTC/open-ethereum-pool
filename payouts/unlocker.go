@@ -29,6 +29,7 @@ type UnlockerConfig struct {
 	Timeout        string  `json:"timeout"`
 	Account        string
 	Password       string
+	Address        string
 }
 
 const minDepth = 16
@@ -118,7 +119,7 @@ func (u *BlockUnlocker) unlockCandidates(candidates []*storage.BlockData) (*Unlo
 			return nil, fmt.Errorf("Error while retrieving block %v from node, wrong node height", height)
 		}
 
-		if matchCandidate(block, candidate) {
+		if u.matchCandidate(block, candidate) {
 			result.blocks++
 
 			err = u.handleBlock(block, candidate)
@@ -139,7 +140,13 @@ func (u *BlockUnlocker) unlockCandidates(candidates []*storage.BlockData) (*Unlo
 	return result, nil
 }
 
-func matchCandidate(block *rpc.GetBlockReply, candidate *storage.BlockData) bool {
+func (u *BlockUnlocker) matchCandidate(block *rpc.GetBlockReply, candidate *storage.BlockData) bool {
+    // check coinbase target address
+	if block.Transactions[0].Outputs[0].Address != u.config.Address {
+		log.Printf("Orphaned block %v:%v for coinbase address[%s] mismatch error", candidate.RoundHeight, candidate.Nonce, block.Transactions[0].Outputs[0].Address)
+		return false
+	}
+
 	nonce1, _ := strconv.ParseInt(block.Nonce, 10, 64)
 	nonce2, _ := strconv.ParseInt(strings.Replace(candidate.Nonce, "0x", "", -1), 16, 64)
 
@@ -155,25 +162,8 @@ func matchCandidate(block *rpc.GetBlockReply, candidate *storage.BlockData) bool
 	if len(block.Nonce) > 0 {
 		return strings.EqualFold(block.Nonce, candidate.Nonce)
 	}
-	/*
-		// Parity's EIP: https://github.com/ethereum/EIPs/issues/95
-		if len(block.SealFields) == 2 {
-			return strings.EqualFold(candidate.Nonce, block.SealFields[1])
-		}
-	*/
+
 	return false
-}
-
-func (u *BlockUnlocker) XXXhandleBlock(block *rpc.GetBlockReply, candidate *storage.BlockData) error {
-	correctHeight := block.Number
-	candidate.Height = correctHeight
-
-	reward := big.NewInt(int64(300000000 * _math.Pow(0.95 , float64(correctHeight/500000))))
-
-	candidate.Orphan = false
-	candidate.Hash = block.Hash
-	candidate.Reward = reward
-	return nil
 }
 
 func (u *BlockUnlocker) handleBlock(block *rpc.GetBlockReply, candidate *storage.BlockData) error {
@@ -472,10 +462,6 @@ func (u *BlockUnlocker) getRewardWithFee(block *rpc.GetBlockReply) (*big.Int, er
 	if len(block.Transactions[0].Outputs) != 1 {
 		return nil, fmt.Errorf("coinbase invalid output length")
 	}
-
-	/*if block.Transactions[0].Outputs[0].Address != u.config.PoolFeeAddress {
-		return nil, fmt.Errorf("coinbase unexpect address %s", block.Transactions[0].Outputs[0].Address)
-	}*/
 
 	return big.NewInt( block.Transactions[0].Outputs[0].Value ), nil
 }

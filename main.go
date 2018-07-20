@@ -35,6 +35,7 @@ func startApi() {
 func startBlockUnlocker() {
 	cfg.BlockUnlocker.Account = cfg.Account
 	cfg.BlockUnlocker.Password = cfg.Password
+	cfg.BlockUnlocker.Address = cfg.Payouts.Address
 	u := payouts.NewBlockUnlocker(&cfg.BlockUnlocker, backend)
 	u.Start()
 }
