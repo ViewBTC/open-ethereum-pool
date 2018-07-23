@@ -31,6 +31,7 @@ type RPCClient struct {
 
 type GetBalanceReply struct {
 	Unspent int64 `json:"unspent"`
+	Frozen int64 `json:"frozen"`
 }
 
 
@@ -235,7 +236,7 @@ func (r *RPCClient) GetBalance(address string) (*big.Int, error) {
 	if err != nil {
 		return nil, err
 	}
-	return big.NewInt(reply.Unspent), err
+	return big.NewInt(reply.Unspent - reply.Frozen), err
 }
 
 func (r *RPCClient) Sign(from string, s string) (string, error) {

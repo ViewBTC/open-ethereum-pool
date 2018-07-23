@@ -141,7 +141,8 @@ func (u *BlockUnlocker) unlockCandidates(candidates []*storage.BlockData) (*Unlo
 }
 
 func (u *BlockUnlocker) matchCandidate(block *rpc.GetBlockReply, candidate *storage.BlockData) bool {
-    // check coinbase target address
+	log.Printf("========> calling matchCandidate %v:%v with coinbase address[%s]", candidate.RoundHeight, candidate.Nonce, block.Transactions[0].Outputs[0].Address)
+	// check coinbase target address
 	if block.Transactions[0].Outputs[0].Address != u.config.Address {
 		log.Printf("Orphaned block %v:%v for coinbase address[%s] mismatch error", candidate.RoundHeight, candidate.Nonce, block.Transactions[0].Outputs[0].Address)
 		return false
