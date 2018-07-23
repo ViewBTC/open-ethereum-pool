@@ -101,7 +101,7 @@
 		"interval": "1h", 
 		"daemon": "http://127.0.0.1:8820/rpc/v3",
 		"timeout": "10s",
-		"address": "MGvR5eJteEJaLHW8bfvV4uoPYamdpRqtst",
+		"address": "MNDrZ8K5onqt6oJysurGkxG8Qq39aHV6uH",
 		"gas": "21000",
 		"gasPrice": "50000000000",
 		"autoGas": true,
