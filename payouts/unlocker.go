@@ -422,9 +422,8 @@ func (u *BlockUnlocker) calculateRewards(block *storage.BlockData) (*big.Rat, *b
 	}
 
 	if len(u.config.PoolFeeAddress) != 0 {
-		address := strings.ToLower(u.config.PoolFeeAddress)
 		fee, _ := strconv.ParseInt(poolProfit.FloatString(0), 10, 64)
-		rewards[address] += fee
+		rewards[u.config.PoolFeeAddress] += fee
 	}
 
 	return revenue, minersProfit, poolProfit, rewards, nil
