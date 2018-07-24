@@ -253,28 +253,7 @@ func (u *PayoutsProcessor) process() {
 		}
 		mustPay++
 
-		// Lock payments for current payout
-		err = u.backend.LockPayouts(login, amount)
-		if err != nil {
-			log.Printf("Failed to lock payment for %s: %v", login, err)
-			u.halt = true
-			u.lastFail = err
-			break
-		}
-		log.Printf("Locked payment for %s, %v Satoshi", login, amount)
-
-		// Debit miner's balance and update stats
-		err = u.backend.UpdateBalance(login, amount)
-		if err != nil {
-			log.Printf("Failed to update balance for %s, %v Satoshi: %v", login, amount, err)
-			u.halt = true
-			u.lastFail = err
-			break
-		}
-
 		toPay[login] = amount
-
-		minersPaid++
 		totalAmount.Add(totalAmount, amountInSatoshi)
 		log.Printf("To Pay %v Satoshi to %v", amount, login)
 	}
@@ -320,6 +299,26 @@ func (u *PayoutsProcessor) process() {
 	}
 
 	for	login, amount := range toPay {
+		// Lock payments for current payout
+		err = u.backend.LockPayouts(login, amount)
+		if err != nil {
+			log.Printf("Failed to lock payment for %s: %v", login, err)
+			u.halt = true
+			u.lastFail = err
+			break
+		}
+		log.Printf("Locked payment for %s, %v Satoshi", login, amount)
+
+		// Debit miner's balance and update stats
+		err = u.backend.UpdateBalance(login, amount)
+		if err != nil {
+			log.Printf("Failed to update balance for %s, %v Satoshi: %v", login, amount, err)
+			u.halt = true
+			u.lastFail = err
+			break
+		}
+
+		minersPaid++
 		// Log transaction hash
 		err = u.backend.WritePayment(login, txHash, amount)
 		if err != nil {
