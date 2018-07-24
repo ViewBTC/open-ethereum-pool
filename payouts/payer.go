@@ -104,7 +104,7 @@ func (u *PayoutsProcessor) Start() {
 	}()
 }
 
-func (u *PayoutsProcessor) process() {
+func (u *PayoutsProcessor) XXprocess() {
 	if u.halt {
 		log.Println("Payments suspended due to last critical error:", u.lastFail)
 		return
@@ -226,6 +226,137 @@ func (u *PayoutsProcessor) process() {
 		u.bgSave()
 	}
 }
+
+
+func (u *PayoutsProcessor) process() {
+	if u.halt {
+		log.Println("Payments suspended due to last critical error:", u.lastFail)
+		return
+	}
+	mustPay := 0
+	minersPaid := 0
+	totalAmount := big.NewInt(0)
+	
+	toPay := make(map[string]int64)
+	payees, err := u.backend.GetPayees()
+	if err != nil {
+		log.Println("Error while retrieving payees from backend:", err)
+		return
+	}
+
+	for _, login := range payees {
+		amount, _ := u.backend.GetBalance(login)
+		amountInSatoshi := big.NewInt(amount)
+		log.Printf("check payment for %s, %v Satoshi", login, amount)
+		if !u.reachedThreshold(amountInSatoshi) {
+			continue
+		}
+		mustPay++
+
+		// Lock payments for current payout
+		err = u.backend.LockPayouts(login, amount)
+		if err != nil {
+			log.Printf("Failed to lock payment for %s: %v", login, err)
+			u.halt = true
+			u.lastFail = err
+			break
+		}
+		log.Printf("Locked payment for %s, %v Satoshi", login, amount)
+
+		// Debit miner's balance and update stats
+		err = u.backend.UpdateBalance(login, amount)
+		if err != nil {
+			log.Printf("Failed to update balance for %s, %v Satoshi: %v", login, amount, err)
+			u.halt = true
+			u.lastFail = err
+			break
+		}
+
+		toPay[login] = amount
+
+		minersPaid++
+		totalAmount.Add(totalAmount, amountInSatoshi)
+		log.Printf("To Pay %v Satoshi to %v", amount, login)
+	}
+
+	if u.halt {
+		return
+	}
+
+	if mustPay > 0 {
+		log.Printf("Paid total %v Satoshi to %v of %v payees", totalAmount, minersPaid, mustPay)
+	} else {
+		log.Println("No payees that have reached payout threshold")
+		return
+	}
+
+	// Require active peers before processing
+	if !u.checkPeers() {
+		return
+	}
+
+	// Check if we have enough funds
+	log.Printf("u.rpc.GetBalance(u.config.Address) %s", u.config.Address)
+	poolBalance, err := u.rpc.GetBalance(u.config.Address)
+	if err != nil {
+		u.halt = true
+		u.lastFail = err
+		return
+	}
+	if poolBalance.Cmp(totalAmount) < 0 {
+		err := fmt.Errorf("Not enough balance for payment, need %s Satoshi, pool has %s Satoshi",
+			totalAmount.String(), poolBalance.String())
+		u.halt = true
+		u.lastFail = err
+		return
+	}
+
+	txHash, err := u.rpc.SendMore(u.config.Address, toPay)
+	if err != nil {
+		log.Printf("Failed to send payment to miners! %s, %v", txHash, err)
+		u.halt = true
+		u.lastFail = err
+		return
+	}
+
+	for	login, amount := range toPay {
+		// Log transaction hash
+		err = u.backend.WritePayment(login, txHash, amount)
+		if err != nil {
+			log.Printf("Failed to log payment data for %s, %v Satoshi, tx: %s: %v", login, amount, txHash, err)
+			u.halt = true
+			u.lastFail = err
+			break
+		}
+	}
+
+	// Wait for TX confirmation before further payouts
+	for {
+		log.Printf("Waiting for tx confirmation: %v", txHash)
+		time.Sleep(txCheckInterval)
+		receipt, err := u.rpc.GetTxReceipt(txHash)
+		if err != nil {
+			log.Printf("Failed to get tx receipt for %v: %v", txHash, err)
+			continue
+		}
+		// Tx has been mined
+		if receipt != nil && receipt.Confirmed() {
+			if receipt.Successful() {
+				log.Printf("Payout tx successful %s", txHash)
+			} else {
+				log.Printf("Payout tx failed %s. Address contract throws on incoming tx.", txHash)
+			}
+			break
+		}
+	}
+
+	// Save redis state to disk
+	if minersPaid > 0 && u.config.BgSave {
+		u.bgSave()
+	}
+
+}
+
 
 func (self PayoutsProcessor) isUnlockedAccount() bool {
 	_, err := self.rpc.Sign(self.config.Address, "0x0")

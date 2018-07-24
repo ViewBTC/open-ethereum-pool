@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
-	//"strconv"
+	"strconv"
 	//"strings"
 	"sync"
 
@@ -49,6 +49,11 @@ type MVSTx struct {
 	Locktime string `json:"lock_time"`
 	Version  string `json:"version"`
 	Outputs  []MVSTxOutput `json:"outputs"`
+}
+
+type MVSSignRawTxReply struct {
+	Hash     string `json:"hash"`
+	RawTx string `json:"rawtx"`
 }
 
 /*
@@ -284,35 +289,129 @@ func (r *RPCClient) SendTransaction(from, to, value string) (string, error) {
 
 	return reply.Hash, err
 }
+
 /*
-func (r *RPCClient) SendTransaction(from, to, gas, gasPrice, value string, autoGas bool) (string, error) {
-	params := map[string]string{
-		"from":  from,
-		"to":    to,
-		"value": value,
+   :param: type(uint16_t): "Transaction type. 0 -- transfer etp, 1 -- deposit etp, 3 -- transfer asset"
+   :param: senders(list of string): "Send from addresses"
+   :param: receivers(list of string): "Send to [address:amount]. amount is asset number if sybol option specified"
+   :param: symbol(std::string): "asset name, not specify this option for etp tx"
+   :param: deposit(uint16_t): "Deposits support [7, 30, 90, 182, 365] days. defaluts to 7 days"
+   :param: mychange(std::string): "Mychange to this address, includes etp and asset change"
+   :param: message(std::string): "Message/Information attached to this transaction"
+   :param: fee(uint64_t): "Transaction fee. defaults to 10000 ETP bits"
+*/
+func (r *RPCClient) createRawTX(type_ uint16, senders []string, receivers []string, symbol string, deposit uint16, mychange string, message string, fee uint64) (string, error) {
+	cmd := "createrawtx"
+	positional := []interface{}{}
+
+	optional := map[string]interface{}{
+		"type":      type_,
+		"senders":   senders,
+		"receivers": receivers,
 	}
-	if !autoGas {
-		params["gas"] = gas
-		params["gasPrice"] = gasPrice
+
+	if symbol != "" {
+		optional["symbol"] = symbol
 	}
-	rpcResp, err := r.doPost(r.Url, "eth_sendTransaction", []interface{}{params})
-	var reply string
+	if deposit != 0 {
+		optional["deposit"] = deposit
+	}
+	if mychange != "" {
+		optional["mychange"] = mychange
+	}
+	if message != "" {
+		optional["message"] = message
+	}
+	if fee != 0 {
+		optional["fee"] = fee
+	}
+	args := append(positional, optional)
+	rpcResp, err := r.doPost(r.Url, cmd, args)
 	if err != nil {
-		return reply, err
+		return "", err
 	}
-	err = json.Unmarshal(*rpcResp.Result, &reply)
+	var rawtx string
+	err = json.Unmarshal(*rpcResp.Result, &rawtx)
 	if err != nil {
-		return reply, err
+		return "", err
 	}
-	 * There is an inconsistence in a "standard". Geth returns error if it can't unlock signer account,
-	 * but Parity returns zero hash 0x000... if it can't send tx, so we must handle this case.
-	 * https://github.com/ethereum/wiki/wiki/JSON-RPC#returns-22
-	 *
-	if util.IsZeroHash(reply) {
-		err = errors.New("transaction is not yet available")
+
+	return rawtx, err
+}
+/*
+   :param: ACCOUNTNAME(std::string): Account name required.
+   :param: ACCOUNTAUTH(std::string): Account password(authorization) required.
+   :param: TRANSACTION(string of hexcode): "The input Base16 transaction to sign."
+*/
+func (r *RPCClient) signRawTX(TRANSACTION string) (string, error) {
+	cmd := "signrawtx"
+	positional := []interface{}{r.Account, r.Password, TRANSACTION}
+
+	optional := map[string]interface{}{}
+
+	args := append(positional, optional)
+	rpcResp, err := r.doPost(r.Url, cmd, args)
+	if err != nil {
+		return "", err
 	}
-	return reply, err
-}*/
+
+	var rawtx MVSSignRawTxReply
+	err = json.Unmarshal(*rpcResp.Result, &rawtx)
+	if err != nil {
+		return "", err
+	}
+
+	return rawtx.RawTx, err
+}
+
+/*
+   :param: TRANSACTION(string of hexcode): "The input Base16 transaction to broadcast."
+   :param: fee(uint64_t): "The max tx fee. default_value 10 etp"
+*/
+func (r *RPCClient) sendRawTX(TRANSACTION string, fee uint64) (string, error) {
+	cmd := "sendrawtx"
+	positional := []interface{}{TRANSACTION}
+
+	optional := map[string]interface{}{}
+
+	if fee != 0 {
+		optional["fee"] = fee
+	}
+	args := append(positional, optional)
+	rpcResp, err := r.doPost(r.Url, cmd, args)
+	if err != nil {
+		return "", err
+	}
+
+	var txhash string
+	err = json.Unmarshal(*rpcResp.Result, &txhash)
+	if err != nil {
+		return "", err
+	}
+
+	return txhash, err
+}
+
+func (r *RPCClient) SendMore(from string, receivers map[string]int64 ) (string, error) {
+	var	receivers_ []string
+	var senders []string
+	for	login, amount := range receivers {
+		receivers_ = append(receivers_, login + ":" + strconv.FormatInt(amount, 10))
+	}
+	senders = append(senders, from)
+	rawtx1, err1 := r.createRawTX(0, senders, receivers_, "", 0, from, "", 10000)
+	if err1 != nil {
+		return "createRawTX Failed", err1
+	}
+
+	rawtx2, err2 := r.signRawTX(rawtx1)
+	if err2 != nil {
+		return "signRawTX Failed", err2
+	}
+
+	return r.sendRawTX(rawtx2, 10000)
+}
+
 
 func (r *RPCClient) doPost(url string, method string, params interface{}) (*JSONRpcResp, error) {
 	jsonReq := map[string]interface{}{"jsonrpc": "2.0", "method": method, "params": params, "id": 0}
