@@ -19,24 +19,39 @@ import (
 	"github.com/sammy007/open-ethereum-pool/util"
 )
 
+type StratumServer struct {
+	sessionsMu sync.RWMutex
+	sessions   map[*Session]struct{}
+	timeout    time.Duration
+	diff               string
+}
+
 type ProxyServer struct {
 	config             *Config
 	blockTemplate      atomic.Value
 	upstream           int32
 	upstreams          []*rpc.RPCClient
 	backend            *storage.RedisClient
-	diff               string
+	//diff               string
 	policy             *policy.PolicyServer
 	hashrateExpiration time.Duration
 	failsCount         int64
 
+	/*
 	// Stratum
 	sessionsMu sync.RWMutex
 	sessions   map[*Session]struct{}
 	timeout    time.Duration
+	*/
+
+	// Stratums
+	stratums []*StratumServer
 }
 
 type Session struct {
+	// the statum instance id
+	stratum_id int
+
 	ip  string
 	enc *json.Encoder
 
@@ -53,7 +68,7 @@ func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
 	policy := policy.Start(&cfg.Proxy.Policy, backend)
 
 	proxy := &ProxyServer{config: cfg, backend: backend, policy: policy}
-	proxy.diff = util.GetTargetHex(cfg.Proxy.Difficulty)
+	//proxy.diff = util.GetTargetHex(cfg.Proxy.Difficulty)
 
 	proxy.upstreams = make([]*rpc.RPCClient, len(cfg.Upstream))
 	for i, v := range cfg.Upstream {
@@ -61,10 +76,14 @@ func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
 		log.Printf("Upstream: %s => %s", v.Name, v.Url)
 	}
 	log.Printf("Default upstream: %s => %s", proxy.rpc().Name, proxy.rpc().Url)
-
-	if cfg.Proxy.Stratum.Enabled {
-		proxy.sessions = make(map[*Session]struct{})
-		go proxy.ListenTCP()
+	proxy.stratums = make([]*StratumServer, len(cfg.Proxy.Stratums))
+	log.Printf("Total StratumServer count: %d", len(cfg.Proxy.Stratums))
+	for i, st := range cfg.Proxy.Stratums {
+		stratumserver := StratumServer{sessions: make(map[*Session]struct{}), diff: util.GetTargetHex(st.Difficulty)}
+		proxy.stratums[i] = &stratumserver
+		if st.Enabled {
+			go proxy.ListenTCP(i)
+		}
 	}
 
 	proxy.fetchBlockTemplate()
@@ -194,7 +213,8 @@ func (s *ProxyServer) handleClient(w http.ResponseWriter, r *http.Request, ip st
 	r.Body = http.MaxBytesReader(w, r.Body, s.config.Proxy.LimitBodySize)
 	defer r.Body.Close()
 
-	cs := &Session{ip: ip, enc: json.NewEncoder(w)}
+	// use the first stratum diffculty as the proxy diffculty
+	cs := &Session{stratum_id: 0, ip: ip, enc: json.NewEncoder(w)}
 	dec := json.NewDecoder(r.Body)
 	for {
 		var req JSONRpcReq

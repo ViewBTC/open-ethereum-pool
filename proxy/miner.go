@@ -12,12 +12,12 @@ import (
 
 var hasher = ethash.New()
 
-func (s *ProxyServer) processShare(login, id, ip string, t *BlockTemplate, params []string) (bool, bool) {
+func (s *ProxyServer) processShare(login, id, ip string, t *BlockTemplate, params []string, stratum_id int) (bool, bool) {
 	nonceHex := params[0]
 	hashNoNonce := params[1]
 	mixDigest := params[2]
 	nonce, _ := strconv.ParseUint(strings.Replace(nonceHex, "0x", "", -1), 16, 64)
-	shareDiff := s.config.Proxy.Difficulty
+	shareDiff := s.config.Proxy.Stratums[stratum_id].Difficulty
 
 	if !strings.EqualFold(t.Header, hashNoNonce) {
 		log.Printf("Stale share from %v@%v", login, ip)

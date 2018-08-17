@@ -38,16 +38,15 @@ func (s *ProxyServer) handleGetWorkRPC(cs *Session) ([]string, *ErrorReply) {
 	if t == nil || len(t.Header) == 0 || s.isSick() {
 		return nil, &ErrorReply{Code: 0, Message: "Work not ready"}
 	}
-	//log.Printf("handleGetWorkRPC diff= %s, target= %s", s.diff, t.Target)
-	return []string{t.Header, t.Seed, s.diff}, nil
-	//return []string{t.Header, t.Seed, t.Target}, nil
+	diff := s.stratums[cs.stratum_id].diff
+	return []string{t.Header, t.Seed, diff}, nil
 }
 
 // Stratum
 func (s *ProxyServer) handleTCPSubmitRPC(cs *Session, id string, params []string) (bool, *ErrorReply) {
-	s.sessionsMu.RLock()
-	_, ok := s.sessions[cs]
-	s.sessionsMu.RUnlock()
+	s.stratums[cs.stratum_id].sessionsMu.RLock()
+	_, ok := s.stratums[cs.stratum_id].sessions[cs]
+	s.stratums[cs.stratum_id].sessionsMu.RUnlock()
 
 	if !ok {
 		return false, &ErrorReply{Code: 25, Message: "Not subscribed"}
@@ -71,7 +70,7 @@ func (s *ProxyServer) handleSubmitRPC(cs *Session, login, id string, params []st
 		return false, &ErrorReply{Code: -1, Message: "Malformed PoW result"}
 	}
 	t := s.currentBlockTemplate()
-	exist, validShare := s.processShare(login, id, cs.ip, t, params)
+	exist, validShare := s.processShare(login, id, cs.ip, t, params, cs.stratum_id)
 	ok := s.policy.ApplySharePolicy(cs.ip, !exist && validShare)
 
 	if exist {

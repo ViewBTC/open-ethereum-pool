@@ -7,7 +7,7 @@
 
 	"proxy": {
 		"enabled": true,
-		"listen": "47.88.76.112:8888",
+		"listen": "47.88.76.112:8889",
 		"limitHeadersSize": 1024,
 		"limitBodySize": 256,
 		"behindReverseProxy": false,
@@ -19,12 +19,29 @@
 		"healthCheck": true,
 		"maxFails": 100,
 
-		"stratum": {
-			"enabled": true,
-			"listen": "47.88.76.112:8008",
-			"timeout": "120s",
-			"maxConn": 8192
-		},
+		"stratums": [
+			{
+				"enabled": false,
+				"listen": "47.88.76.112:8008",
+				"timeout": "120s",
+				"difficulty": 2000000000,
+				"maxConn": 8192
+			},
+			{
+				"enabled": true,
+				"listen": "47.88.76.112:8009",
+				"timeout": "120s",
+				"difficulty": 6000000000,
+				"maxConn": 8192
+			},
+			{
+				"enabled": true,
+				"listen": "47.88.76.112:8010",
+				"timeout": "120s",
+				"difficulty":12000000000,
+				"maxConn": 8192
+			}
+		],
 
 		"policy": {
 			"workers": 8,
