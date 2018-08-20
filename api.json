@@ -19,12 +19,29 @@
 		"healthCheck": true,
 		"maxFails": 100,
 
-		"stratum": {
-			"enabled": true,
-			"listen": "172.31.45.254:8008",
-			"timeout": "120s",
-			"maxConn": 8192
-		},
+		"stratums": [
+			{
+				"enabled": true,
+				"listen": "47.88.76.112:8008",
+				"timeout": "120s",
+				"difficulty": 2000000000,
+				"maxConn": 8192
+			},
+			{
+				"enabled": true,
+				"listen": "47.88.76.112:8009",
+				"timeout": "120s",
+				"difficulty": 6000000000,
+				"maxConn": 8192
+			},
+			{
+				"enabled": true,
+				"listen": "47.88.76.112:8010",
+				"timeout": "120s",
+				"difficulty":12000000000,
+				"maxConn": 8192
+			}
+		],
 
 		"policy": {
 			"workers": 8,
@@ -101,7 +118,7 @@
 		"interval": "1h", 
 		"daemon": "http://127.0.0.1:8820/rpc/v3",
 		"timeout": "10s",
-		"address": "M8N42NP5NR6tcgXqyzG3oZRqBqPoWRMLGu",
+		"address": "MNDrZ8K5onqt6oJysurGkxG8Qq39aHV6uH",
 		"gas": "21000",
 		"gasPrice": "50000000000",
 		"autoGas": true,

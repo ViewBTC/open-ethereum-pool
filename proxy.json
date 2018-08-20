@@ -7,7 +7,7 @@
 
 	"proxy": {
 		"enabled": true,
-		"listen": "47.88.76.112:8889",
+		"listen": "47.88.76.112:8888",
 		"limitHeadersSize": 1024,
 		"limitBodySize": 256,
 		"behindReverseProxy": false,
@@ -21,7 +21,7 @@
 
 		"stratums": [
 			{
-				"enabled": false,
+				"enabled": true,
 				"listen": "47.88.76.112:8008",
 				"timeout": "120s",
 				"difficulty": 2000000000,
