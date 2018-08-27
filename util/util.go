@@ -5,7 +5,9 @@ import (
 	"regexp"
 	"strconv"
 	"time"
-
+	"bytes"
+	"crypto/sha256"
+	"reflect"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 )
@@ -14,14 +16,56 @@ var Ether = math.BigPow(10, 18)
 var Satoshi = math.BigPow(10, 8)
 
 var pow256 = math.BigPow(2, 256)
-var addressPattern = regexp.MustCompile("^M[0-9a-zA-Z]{10,50}$")
+var bitcoinAlphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+var b58Alphabet = []byte(bitcoinAlphabet)
+var addressPattern = regexp.MustCompile("^M[" + bitcoinAlphabet + "]{33}$")
 var zeroHash = regexp.MustCompile("^0?x?0+$")
 
-func IsValidHexAddress(s string) bool {
+func Base58Decode(input []byte) []byte {
+    result := big.NewInt(0)
+    zeroBytes := 0
+
+    for _, b := range input {
+        if b != b58Alphabet[0] {
+            break
+        }
+
+        zeroBytes++
+    }
+
+    payload := input[zeroBytes:]
+    for _, b := range payload {
+        charIndex := bytes.IndexByte(b58Alphabet, b)
+        result.Mul(result, big.NewInt(int64(len(b58Alphabet))))
+        result.Add(result, big.NewInt(int64(charIndex)))
+    }
+
+    decoded := result.Bytes()
+    decoded = append(bytes.Repeat([]byte{byte(0x00)}, zeroBytes), decoded...)
+
+    return decoded
+}
+
+func IsValidBitcoinAddress(s string) bool {
 	if !addressPattern.MatchString(s) {
 		return false
 	}
-	return true
+
+	decoded := Base58Decode([]byte(s))
+
+	bitcoin_hash := func (input []byte) []byte {
+		h1 := sha256.New()
+		h1.Write(input)
+
+		h2 := sha256.New()
+		h2.Write(h1.Sum(nil))
+		return h2.Sum(nil)
+	}
+
+	checksum := bitcoin_hash(decoded[:len(decoded)-4])
+
+
+	return reflect.DeepEqual(checksum[:4], decoded[len(decoded)-4:])
 }
 
 func IsZeroHash(s string) bool {

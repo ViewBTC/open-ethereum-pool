@@ -51,7 +51,7 @@ type BlockUnlocker struct {
 }
 
 func NewBlockUnlocker(cfg *UnlockerConfig, backend *storage.RedisClient) *BlockUnlocker {
-	if len(cfg.PoolFeeAddress) != 0 && !util.IsValidHexAddress(cfg.PoolFeeAddress) {
+	if len(cfg.PoolFeeAddress) != 0 && !util.IsValidBitcoinAddress(cfg.PoolFeeAddress) {
 		log.Fatalln("Invalid poolFeeAddress", cfg.PoolFeeAddress)
 	}
 	if cfg.Depth < minDepth*2 {

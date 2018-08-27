@@ -21,7 +21,7 @@ func (s *ProxyServer) handleLoginRPC(cs *Session, params []string, id string) (b
 	}
 
 	login := params[0]
-	if !util.IsValidHexAddress(login) {
+	if !util.IsValidBitcoinAddress(login) {
 		return false, &ErrorReply{Code: -1, Message: "Invalid login"}
 	}
 	if !s.policy.ApplyLoginPolicy(login, cs.ip) {
