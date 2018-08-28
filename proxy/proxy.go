@@ -10,7 +10,11 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
+	//websocket --begin
+    "flag"
+    "net/url"
+	"github.com/gorilla/websocket"
+	//websocket --end
 	"github.com/gorilla/mux"
 
 	"github.com/sammy007/open-ethereum-pool/policy"
@@ -61,6 +65,64 @@ type Session struct {
 	login string
 }
 
+
+// -- websocket support
+func SubscribeBlockUpdate(websocket_rul string, on_notify func()) error {
+	go func() {
+		var addr = flag.String("addr", websocket_rul, "http service address")
+		u := url.URL{Scheme: "ws", Host: *addr, Path: "/ws"}
+		var dialer *websocket.Dialer
+
+		var rpcResp map[string]interface{}
+		for {
+			conn, _, err := dialer.Dial(u.String(), nil)
+			if err != nil {
+				log.Printf("Websocket Dial failed: %v", err)
+				continue
+			}
+			for i := 0; i < 2; i++ {
+				err := conn.ReadJSON(&rpcResp)
+				if err != nil {
+					log.Printf("Websocket ReadJSON failed: %v", err)
+					continue
+				}
+				
+				log.Printf("Websocket Dial Ack: %v", rpcResp)
+			}
+
+			log.Printf("Websocket Dial OK")
+
+			var topic = map[string] string {"event": "subscribe", "channel": "height"}
+			err = conn.WriteJSON(topic)
+			if err != nil {
+				log.Printf("Websocket WriteJSON failed: %v", err)
+				continue
+			}
+			err = conn.ReadJSON(&rpcResp)
+			if err != nil {
+				log.Printf("Websocket ReadJSON failed: %v", err)
+				continue
+			}
+
+			log.Printf("Websocket subscribe topic OK: %v", rpcResp)
+
+			for {
+				err = conn.ReadJSON(&rpcResp)
+				if err != nil {
+					log.Printf("Websocket ReadJSON failed: %v", err)
+					break
+				}
+				//log.Printf("Websocket ReadJSON : %v", rpcResp)
+				on_notify()
+			}
+			//5 seconds latency for auto recover
+			time.Sleep(5 * time.Second)
+		}
+	}()
+
+	return nil
+}
+
 func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
 	if len(cfg.Name) == 0 {
 		log.Fatal("You must set instance name")
@@ -109,6 +171,17 @@ func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
 			}
 		}
 	}()
+
+	new_block_notify := func() {
+		log.Printf("Websocket notify new block!")
+		proxy.fetchBlockTemplate()
+		refreshTimer.Reset(refreshIntv)
+	}
+	
+	err := SubscribeBlockUpdate("127.0.0.1:8821", new_block_notify)
+	if err != nil {
+		log.Printf("Failed SubscribeBlockUpdate: %v", err)
+	}
 
 	go func() {
 		for {
