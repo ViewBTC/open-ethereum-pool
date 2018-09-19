@@ -51,13 +51,13 @@
 			"banning": {
 				"enabled": false,
 				"ipset": "blacklist",
-				"timeout": 1800,
+				"timeout": 180,
 				"invalidPercent": 30,
-				"checkThreshold": 0,
+				"checkThreshold": 300,
 				"malformedLimit": 5
 			},
 			"limits": {
-				"enabled": false,
+				"enabled": true,
 				"limit": 30,
 				"grace": "5m",
 				"limitJump": 10
