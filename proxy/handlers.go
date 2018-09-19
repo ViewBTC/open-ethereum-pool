@@ -79,11 +79,12 @@ func (s *ProxyServer) handleSubmitRPC(cs *Session, login, id string, params []st
 	}
 
 	if !validShare {
-		log.Printf("Invalid share from %s@%s", login, cs.ip)
 		// Bad shares limit reached, return error and close
 		if !ok {
+			log.Printf("[Send] Invalid share from %s@%s", login, cs.ip)
 			return false, &ErrorReply{Code: 23, Message: "Invalid share"}
 		}
+		log.Printf("[LogOnly] Invalid share from %s@%s", login, cs.ip)
 		return false, nil
 	}
 	log.Printf("Valid share from %s@%s", login, cs.ip)
