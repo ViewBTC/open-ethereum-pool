@@ -14,6 +14,7 @@ Router.map(function() {
   this.route('blocks', function() {
     this.route('immature');
     this.route('pending');
+    this.route('reject');
   });
 
   this.route('help');

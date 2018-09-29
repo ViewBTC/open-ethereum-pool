@@ -53,7 +53,7 @@
 				"ipset": "blacklist",
 				"timeout": 180,
 				"invalidPercent": 30,
-				"checkThreshold": 300,
+				"checkThreshold": 100,
 				"malformedLimit": 5
 			},
 			"limits": {

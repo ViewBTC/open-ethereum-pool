@@ -21,6 +21,9 @@
     {{#active-li currentWhen='blocks.pending' role='presentation'}}
       {{#link-to 'blocks.pending'}}New Blocks <span class="badge alert-info">{{format-number model.candidatesTotal}}</span>{{/link-to}}
     {{/active-li}}
+    {{#active-li currentWhen='blocks.reject' role='presentation'}}
+      {{#link-to 'blocks.reject'}}Reject Blocks <span class="badge alert-danger">{{format-number model.rejectsTotal}}</span>{{/link-to}}
+    {{/active-li}}
   </ul>
   {{outlet}}
 </div>

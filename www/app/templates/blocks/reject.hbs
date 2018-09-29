@@ -1,0 +1,27 @@
+{{#if model.rejects}}
+<h4>Blocks Rejected by the MVSD Program</h4>
+<div class="table-responsive">
+  <table class="table table-condensed table-striped">
+    <thead>
+      <tr>
+        <th>Height</th>
+        <th>Time Found</th>
+        <th>Why Reject?</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each model.rejects as |block|}}
+      <tr>
+        <td><a href="https://explorer.mvs.org/#!/blk/{{block.height}}" rel="nofollow" target="_blank">{{format-number block.height}}</a></td>
+        <td>{{format-date-locale block.timestamp}}</td>
+        <td>
+          <span class="label label-danger">TODO: More Reject Messages</span>
+        </td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>
+{{else}}
+<h3>No reject blocks yet</h3>
+{{/if}}

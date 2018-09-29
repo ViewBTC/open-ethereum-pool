@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"sort"
+
 	//"strings"
 	"sync"
 	"sync/atomic"
@@ -216,6 +217,8 @@ func (s *ApiServer) BlocksIndex(w http.ResponseWriter, r *http.Request) {
 		reply["immatureTotal"] = stats["immatureTotal"]
 		reply["candidates"] = stats["candidates"]
 		reply["candidatesTotal"] = stats["candidatesTotal"]
+		reply["rejects"] = stats["rejects"]
+		reply["rejectsTotal"] = stats["rejectsTotal"]
 		reply["luck"] = stats["luck"]
 	}
 

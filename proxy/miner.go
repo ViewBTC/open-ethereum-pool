@@ -44,7 +44,7 @@ func (s *ProxyServer) processShare(login, id, ip string, t *BlockTemplate, param
 		return false, false
 	}
 
-	if hasher.Verify(block) { 
+	if hasher.Verify(block) {
 		n := nonce ^ 0x6675636b6d657461
 		nn := strconv.FormatUint(n, 16)
 		params_ := []string{nn, params[1], params[2]}
@@ -54,6 +54,10 @@ func (s *ProxyServer) processShare(login, id, ip string, t *BlockTemplate, param
 			log.Printf("Block submission failure at height %v for %v: %v", t.Height, t.Header, err)
 		} else if !ok {
 			log.Printf("Block rejected at height %v for %v", t.Height, t.Header)
+
+			//record this unexpect reject to the backend
+			s.backend.WriteReject(t.Height)
+
 			return false, false
 		} else {
 			s.fetchBlockTemplate()

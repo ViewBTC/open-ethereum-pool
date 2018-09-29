@@ -189,6 +189,18 @@ func (r *RedisClient) WriteShare(login, id string, params []string, diff int64, 
 	return false, err
 }
 
+func (r *RedisClient) WriteReject(height uint64) (bool, error) {
+	tx := r.client.Multi()
+	defer tx.Close()
+
+	ms := util.MakeTimestamp()
+	ts := ms / 1000
+	s := join(ts)
+	r.client.ZAdd(r.formatKey("blocks", "rejects"), redis.Z{Score: float64(height), Member: s})
+
+	return true, nil
+}
+
 func (r *RedisClient) WriteBlock(login, id string, params []string, diff, roundDiff int64, height uint64, window time.Duration) (bool, error) {
 	exist, err := r.checkPoWExist(height, params)
 	if err != nil {
@@ -668,6 +680,9 @@ func (r *RedisClient) CollectStats(smallWindow time.Duration, maxBlocks, maxPaym
 		tx.ZCard(r.formatKey("blocks", "matured"))
 		tx.ZCard(r.formatKey("payments", "all"))
 		tx.ZRevRangeWithScores(r.formatKey("payments", "all"), 0, maxPayments-1)
+
+		tx.ZRevRangeWithScores(r.formatKey("blocks", "rejects"), 0, -1)
+		tx.ZCard(r.formatKey("blocks", "rejects"))
 		return nil
 	})
 
@@ -677,6 +692,11 @@ func (r *RedisClient) CollectStats(smallWindow time.Duration, maxBlocks, maxPaym
 
 	result, _ := cmds[2].(*redis.StringStringMapCmd).Result()
 	stats["stats"] = convertStringMap(result)
+
+	rejects := convertRejectResults(cmds[11].(*redis.ZSliceCmd))
+	stats["rejects"] = rejects
+	stats["rejectsTotal"] = cmds[12].(*redis.IntCmd).Val()
+
 	candidates := convertCandidateResults(cmds[3].(*redis.ZSliceCmd))
 	stats["candidates"] = candidates
 	stats["candidatesTotal"] = cmds[6].(*redis.IntCmd).Val()
@@ -816,6 +836,20 @@ func (r *RedisClient) CollectLuckStats(windows []int) (map[string]interface{}, e
 		}
 	}
 	return stats, nil
+}
+
+func convertRejectResults(raw *redis.ZSliceCmd) []*BlockData {
+	var result []*BlockData
+	for _, v := range raw.Val() {
+		// "nonce:powHash:mixDigest:timestamp:diff:totalShares"
+		block := BlockData{}
+		block.Height = int64(v.Score)
+		block.RoundHeight = block.Height
+		fields := strings.Split(v.Member.(string), ":")
+		block.Timestamp, _ = strconv.ParseInt(fields[0], 10, 64)
+		result = append(result, &block)
+	}
+	return result
 }
 
 func convertCandidateResults(raw *redis.ZSliceCmd) []*BlockData {

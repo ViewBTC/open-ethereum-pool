@@ -3,6 +3,7 @@ package proxy
 import (
 	"log"
 	"regexp"
+
 	//"strings"
 
 	"github.com/sammy007/open-ethereum-pool/rpc"
@@ -58,15 +59,16 @@ func (s *ProxyServer) handleSubmitRPC(cs *Session, login, id string, params []st
 	if !workerPattern.MatchString(id) {
 		id = "0"
 	}
+	LoginID := login + ":" + id
 	if len(params) != 3 {
 		s.policy.ApplyMalformedPolicy(cs.ip)
-		log.Printf("Malformed params from %s@%s %v", login, cs.ip, params)
+		log.Printf("Malformed params from %s@%s %v", LoginID, cs.ip, params)
 		return false, &ErrorReply{Code: -1, Message: "Invalid params"}
 	}
 
 	if !noncePattern.MatchString(params[0]) || !hashPattern.MatchString(params[1]) || !hashPattern.MatchString(params[2]) {
 		s.policy.ApplyMalformedPolicy(cs.ip)
-		log.Printf("Malformed PoW result from %s@%s %v", login, cs.ip, params)
+		log.Printf("Malformed PoW result from %s@%s %v", LoginID, cs.ip, params)
 		return false, &ErrorReply{Code: -1, Message: "Malformed PoW result"}
 	}
 	t := s.currentBlockTemplate()
@@ -74,20 +76,20 @@ func (s *ProxyServer) handleSubmitRPC(cs *Session, login, id string, params []st
 	ok := s.policy.ApplySharePolicy(cs.ip, !exist && validShare)
 
 	if exist {
-		log.Printf("Duplicate share from %s@%s %v", login, cs.ip, params)
+		log.Printf("Duplicate share from %s@%s %v", LoginID, cs.ip, params)
 		return false, &ErrorReply{Code: 22, Message: "Duplicate share"}
 	}
 
 	if !validShare {
 		// Bad shares limit reached, return error and close
 		if !ok {
-			log.Printf("Invalid share from %s@%s [Send]", login, cs.ip)
+			log.Printf("Invalid share from %s@%s [Send]", LoginID, cs.ip)
 			return false, &ErrorReply{Code: 23, Message: "Invalid share"}
 		}
-		log.Printf("Invalid share from %s@%s [LogOnly]", login, cs.ip)
+		log.Printf("Invalid share from %s@%s [LogOnly]", LoginID, cs.ip)
 		return false, nil
 	}
-	log.Printf("Valid share from %s@%s", login, cs.ip)
+	log.Printf("Valid share from %s@%s", LoginID, cs.ip)
 
 	if !ok {
 		return true, &ErrorReply{Code: -1, Message: "High rate of invalid shares"}

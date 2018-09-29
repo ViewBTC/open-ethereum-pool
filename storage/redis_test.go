@@ -321,6 +321,15 @@ func TestCollectLuckStats(t *testing.T) {
 	}
 }
 
+func TestWriteReject(t *testing.T) {
+	reset()
+
+	err, _ := r.WriteReject(123456)
+	if err {
+		t.Error("WriteReject Failed")
+	}
+}
+
 func reset() {
 	keys := r.client.Keys(r.prefix + ":*").Val()
 	for _, k := range keys {

@@ -9,6 +9,7 @@ import (
 	"math/big"
 	"net/http"
 	"strconv"
+
 	//"strings"
 	"sync"
 
@@ -31,28 +32,27 @@ type RPCClient struct {
 
 type GetBalanceReply struct {
 	Unspent int64 `json:"unspent"`
-	Frozen int64 `json:"frozen"`
+	Frozen  int64 `json:"frozen"`
 }
-
 
 type GetPeerCountReply struct {
 	Peers []string `json:"peers"`
 }
 
 type MVSTxOutput struct {
-	Address     string `json:"address"`
-	Value       int64 `json:"value"`
+	Address string `json:"address"`
+	Value   int64  `json:"value"`
 }
 
 type MVSTx struct {
-	Hash     string `json:"hash"`
-	Locktime string `json:"lock_time"`
-	Version  string `json:"version"`
+	Hash     string        `json:"hash"`
+	Locktime string        `json:"lock_time"`
+	Version  string        `json:"version"`
 	Outputs  []MVSTxOutput `json:"outputs"`
 }
 
 type MVSSignRawTxReply struct {
-	Hash     string `json:"hash"`
+	Hash  string `json:"hash"`
 	RawTx string `json:"rawtx"`
 }
 
@@ -72,16 +72,16 @@ type GetBlockReply struct {
 }*/
 
 type GetBlockReply struct {
-	Difficulty       string `json:"bits"`
-	Hash             string `json:"hash"`
-	MerkleTreeHash   string `json:"merkle_tree_hash"`
-	Nonce            string `json:"nonce"`
-	PrevHash         string `json:"previous_block_hash"`
-	TimeStamp        uint32 `json:"time_stamp"`
-	Version          int32 `json:"version"`
-	Mixhash          string `json:"mixhash"`
-	Number           int64 `json:"number"`
-	TransactionCount int32 `json:"transaction_count"`
+	Difficulty       string  `json:"bits"`
+	Hash             string  `json:"hash"`
+	MerkleTreeHash   string  `json:"merkle_tree_hash"`
+	Nonce            string  `json:"nonce"`
+	PrevHash         string  `json:"previous_block_hash"`
+	TimeStamp        uint32  `json:"time_stamp"`
+	Version          int32   `json:"version"`
+	Mixhash          string  `json:"mixhash"`
+	Number           int64   `json:"number"`
+	TransactionCount int32   `json:"transaction_count"`
 	Transactions     []MVSTx `json:"transactions"`
 }
 
@@ -221,13 +221,7 @@ func (r *RPCClient) SubmitBlock(params []string) (bool, error) {
 		return false, err
 	}
 	var reply bool
-	//err = json.Unmarshal(*rpcResp.Result, &reply_str)
-	fmt.Println(*rpcResp.Result)
-	if string(*rpcResp.Result) == "\"false\"" {
-		reply = false
-	} else {
-		reply = true
-	}
+	err = json.Unmarshal(*rpcResp.Result, &reply)
 	return reply, err
 }
 
@@ -338,6 +332,7 @@ func (r *RPCClient) createRawTX(type_ uint16, senders []string, receivers []stri
 
 	return rawtx, err
 }
+
 /*
    :param: ACCOUNTNAME(std::string): Account name required.
    :param: ACCOUNTAUTH(std::string): Account password(authorization) required.
@@ -392,11 +387,11 @@ func (r *RPCClient) sendRawTX(TRANSACTION string, fee uint64) (string, error) {
 	return txhash, err
 }
 
-func (r *RPCClient) SendMore(from string, receivers map[string]int64 ) (string, error) {
-	var	receivers_ []string
+func (r *RPCClient) SendMore(from string, receivers map[string]int64) (string, error) {
+	var receivers_ []string
 	var senders []string
-	for	login, amount := range receivers {
-		receivers_ = append(receivers_, login + ":" + strconv.FormatInt(amount, 10))
+	for login, amount := range receivers {
+		receivers_ = append(receivers_, login+":"+strconv.FormatInt(amount, 10))
 	}
 	senders = append(senders, from)
 	rawtx1, err1 := r.createRawTX(0, senders, receivers_, "", 0, from, "", 10000)
@@ -411,7 +406,6 @@ func (r *RPCClient) SendMore(from string, receivers map[string]int64 ) (string, 
 
 	return r.sendRawTX(rawtx2, 10000)
 }
-
 
 func (r *RPCClient) doPost(url string, method string, params interface{}) (*JSONRpcResp, error) {
 	jsonReq := map[string]interface{}{"jsonrpc": "2.0", "method": method, "params": params, "id": 0}
